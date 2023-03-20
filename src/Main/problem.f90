@@ -773,6 +773,7 @@ contains
                 write(*,*) "Cycle time: ", omp_get_wtime()-start
                 !call this%cr%Checkpoint(ckpt_name)
             end do
+            !$omp target end target data
         end if
 
         !print some cell quantities at the end of the calculation to help you debug your code.
