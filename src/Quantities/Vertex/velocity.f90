@@ -231,8 +231,12 @@ contains
         do_offload = (ndev > 0 .and. nz*ny*nx > SIZE)
         is_accel = .TRUE.
 
-        call omp_set_num_threads(24)
-        !$omp parallel do schedule(guided) &
+        !$omp target update to(this%velocity_x, &
+        !$omp                  this%velocity_y, &
+        !$omp                  this%velocity_z, &
+        !$omp                  coordinates, &
+        !$omp                  total_volume)
+        !$omp target loop &
         !$omp private(ip,jp,kp, &
         !$omp         x1,x2,x3,x4,x5,x6,x7,x8, &
         !$omp         y1,y2,y3,y4,y5,y6,y7,y8, &
@@ -267,7 +271,7 @@ contains
         !$omp         u1u2u4,u1u4u5,u1u2u5,u2u3u1,u2u1u6,u2u3u6,u3u4u2, &
         !$omp         u3u2u7,u3u4u7,u4u1u3,u4u3u8,u4u1u8,u5u8u6,u5u6u1, &
         !$omp         u5u8u1,u6u5u7,u6u7u2,u6u5u2,u7u6u8,u7u8u3,u7u6u3, &
-        !$omp         u8u7u5,u8u5u4,u8u7u4) 
+        !$omp         u8u7u5,u8u5u4,u8u7u4)
         do k = 1, nz
             do j = 1, ny
                 do i = 1, nx
@@ -480,7 +484,17 @@ contains
                 end do
             end do
         end do
-        !$omp end parallel do
+        !$omp end target loop
+        !$omp target update from(this%dvelocity_x_dx, &
+        !$omp                    this%dvelocity_x_dy, &
+        !$omp                    this%dvelocity_x_dz, &
+        !$omp                    this%dvelocity_y_dx, &
+        !$omp                    this%dvelocity_y_dy, &
+        !$omp                    this%dvelocity_y_dz, &
+        !$omp                    this%dvelocity_z_dx, &
+        !$omp                    this%dvelocity_z_dy, &
+        !$omp                    this%dvelocity_z_dz)
+
         ! write(*,*) "kernel executed on accelerator:", is_accel
         ! write(*,*) "Derivatives Kernel time: ", omp_get_wtime() - start_time
         cntr = cntr  + 1

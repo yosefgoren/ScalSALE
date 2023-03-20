@@ -749,15 +749,29 @@ contains
             call this%total_volume%    Point_to_data(vol_target)
             
             write(*,*) "Number of Available devices: ", omp_get_num_devices()
+            !$omp target data map(from:this%hydro%velocity%dvelocity_x_dx, &
+            !$omp                      this%hydro%velocity%dvelocity_x_dy, &
+            !$omp                      this%hydro%velocity%dvelocity_x_dz, &
+            !$omp                      this%hydro%velocity%dvelocity_y_dx, &
+            !$omp                      this%hydro%velocity%dvelocity_y_dy, &
+            !$omp                      this%hydro%velocity%dvelocity_y_dz, &
+            !$omp                      this%hydro%velocity%dvelocity_z_dx, &
+            !$omp                      this%hydro%velocity%dvelocity_z_dy, &
+            !$omp                      this%hydro%velocity%dvelocity_z_dz, &
+            !$omp                 to:this%hydro%velocity%velocity_x, &
+            !$omp                    this%hydro%velocity%velocity_y, &
+            !$omp                    this%hydro%velocity%velocity_z, &
+            !$omp                    this%hydro%mesh%coordinates, &
+            !$omp                    this%hydro%total_volume)
             do while (this%time%Should_continue() .and. ncyc < max_ncyc)
                 start = omp_get_wtime()
                 call this%hydro%do_time_step_3d(this%time)
                 call this%time%Update_time()
-                !  call this%Write_to_files()
+                !call this%Write_to_files()
                 counter = counter + 1
                 ncyc = ncyc + 1
                 write(*,*) "Cycle time: ", omp_get_wtime()-start
-            !      call this%cr%Checkpoint(ckpt_name)
+                !call this%cr%Checkpoint(ckpt_name)
             end do
         end if
 
