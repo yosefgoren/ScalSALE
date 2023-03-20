@@ -124,8 +124,6 @@ contains
 
    end subroutine Calculate_vertex_mass_2d
 
-
-
    subroutine Calculate_vertex_mass_3d(this, coordinates, tot_density, c_mass)
       use geometry_module, only : Tetrahederon_volume
       implicit none

@@ -176,7 +176,7 @@
         "dt_cour_fac": 3
     },
     "rezone_advect":{
-        "rezone_type": "lagrange"
+        "rezone_type": "euler"
     },
 "parallel":{
 "np":1,

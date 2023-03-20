@@ -2420,35 +2420,18 @@ contains
             if (virt_k_nzp /= virt_nzp .or. wall_z_top .eqv. .false.) k_end = k_end - 1
         end if
 
-
-
-
-
-
-
-
-
         call this%line_calc_3d(0, i_start, i_end, j_start, j_end, k_start, k_end)
         call this%line_calc_3d(1, i_start, i_end, j_start, j_end, k_start, k_end)
 
-
-
-
-
-        !        do tmp_mat=1, this%n_materials
         call this%adv_mats%a%Exchange_virtual_space_blocking()
         call this%adv_mats%b%Exchange_virtual_space_blocking()
         call this%adv_mats%c%Exchange_virtual_space_blocking()
         call this%adv_mats%side%Exchange_virtual_space_blocking()
-        !        end do
 
         call this%num_mat_cells%Exchange_virtual_space_blocking()
 
-
-
         vof_adv = 0d0
         mat_vof_adv = 0d0
-
 
         do k = 0, this%nzp
             do j = 0, this%nyp
@@ -2463,6 +2446,20 @@ contains
             end do
         end do
 
+        call omp_set_num_threads(24)
+        !$omp parallel do private( &
+        !$omp        i_face,j_face,k_face,i1,j1,k1, &
+        !$omp        i2,j2,k2,i3,j3,k3, &
+        !$omp        i4,j4,k4,x_lag1,y_lag1,z_lag1, &
+        !$omp        x_lag2,y_lag2,z_lag2,x_lag3,y_lag3,z_lag3, &
+        !$omp        x_lag4,y_lag4,z_lag4,x1,y1,z1, &
+        !$omp        x2,y2,z2,x3,y3,z3, &
+        !$omp        x4,y4,z4, &
+        !$omp        tet_vol,tet_counter,sign_tet_vol1,sign_tet_vol2,is_iregular, &
+        !$omp        dx_avg,dy_avg,dz_avg, &
+        !$omp        x_mid1,y_mid1,z_mid1,x_mid2,y_mid2,z_mid2,x_mid_lag1,y_mid_lag1,z_mid_lag1,x_mid_lag2,y_mid_lag2,z_mid_lag2, &
+        !$omp        hexa_vol1,hexa_vol2,hexa_vol3,hexa_vol4, &
+        !$omp        hexa_vol_quart,weight,adv_vol,tmp_mat,mat_vof_adv,dvof,donnor_mass,donnor_sie)
         do k = 1, this%nz
             do j = 1, this%ny
                 do i = 1, this%nx
@@ -2694,14 +2691,18 @@ contains
                                 hexa_vol1, hexa_vol2, hexa_vol3, hexa_vol4, 1)
 
                             vof_adv(i, j, k) = vof_adv(i, j, k) + adv_vol
-                            if (this%shorter_advect) vof_adv(i_face, j_face, k_face) = vof_adv(i_face, j_face, k_face) - adv_vol
-
+                            
+                            if (this%shorter_advect) then
+                                !$omp atomic update
+                                vof_adv(i_face, j_face, k_face) = vof_adv(i_face, j_face, k_face) - adv_vol
+                            end if 
 
                             do tmp_mat = 1, this%n_materials
                                 dvof = this%adv_mats%fxtm(tmp_mat) * 2d0
                                 mat_vof_adv(tmp_mat, i, j, k) = mat_vof_adv(tmp_mat, i, j, k) + dvof
 
                                 if (this%shorter_advect) then
+                                    !$omp atomic update
                                     mat_vof_adv(tmp_mat, i_face, j_face, k_face) = mat_vof_adv(tmp_mat, i_face, j_face, k_face) - dvof
                                 end if
                             end do
@@ -2738,6 +2739,7 @@ contains
                                 end if
 
                                 if (this%shorter_advect) then
+                                    !$omp atomic update
                                     mat_cell_mass_adv(tmp_mat, i_face, j_face, k_face) = mat_cell_mass_adv(tmp_mat, i_face, j_face, k_face) - donnor_mass
                                 end if
 
@@ -2746,6 +2748,7 @@ contains
 
 
                                 if (this%shorter_advect) then
+                                    !$omp atomic update
                                     sie_vof_adv(tmp_mat, i_face, j_face, k_face) = sie_vof_adv(tmp_mat, i_face, j_face, k_face) - donnor_sie
 
                                 end if
@@ -2755,6 +2758,7 @@ contains
                                 init_mat_layers_adv(tmp_mat, i, j, k) = init_mat_layers_adv(tmp_mat, i, j, k) + donnor_init_mat_layer
 
                                 if (this%shorter_advect) then
+                                    !$omp atomic update
                                     init_mat_layers_adv(tmp_mat, i_face,j_face,k_face) =        init_mat_layers_adv(tmp_mat, i_face,j_face,k_face) - &
                                         donnor_init_mat_layer
                                 end if
@@ -2765,6 +2769,7 @@ contains
                 end do
             end do
         end do
+        !$omp end parallel do
 
 
 
